@@ -17,3 +17,6 @@ Makefile.in
 
 /doxygen.cfg
 /libmnl.pc
+
+__pycache__/
+.una_config
