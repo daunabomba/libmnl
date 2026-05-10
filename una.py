@@ -4,14 +4,7 @@ import multiprocessing
 import shutil
 from pathlib import Path
 from mods import colors
-
-def get_env():
-    env = os.environ.copy()
-    # Path to our host-built LLVM tools
-    project_root = Path(__file__).parent.parent.parent
-    host_bin = project_root / "bld" / "host" / "bin"
-    env["PATH"] = f"{host_bin}:{env.get('PATH', '')}"
-    return env
+from mods.build import get_build_env
 
 def target_configure(staging_dir: Path, target_dir: Path, arch="x32"):
     colors.info(f"libmnl: target_configure ({arch})")
@@ -20,7 +13,7 @@ def target_configure(staging_dir: Path, target_dir: Path, arch="x32"):
     # Generate configure script if it doesn't exist
     if not (repo_root / "configure").exists():
         colors.info("libmnl: running autoreconf...")
-        subprocess.run(["autoreconf", "-fi"], cwd=repo_root, env=get_env(), check=True)
+        subprocess.run(["autoreconf", "-fi"], cwd=repo_root, env=get_build_env(), check=True)
 
     std_flags = os.environ.get("CFLAGS", "")
     static_flags = os.environ.get("CFLAGS_STATIC", std_flags)
@@ -42,13 +35,13 @@ def target_configure(staging_dir: Path, target_dir: Path, arch="x32"):
         f"LDFLAGS={static_flags}",
     ]
     
-    subprocess.run(cmd, cwd=repo_root, env=get_env(), check=True)
+    subprocess.run(cmd, cwd=repo_root, env=get_build_env(), check=True)
 
 def target_build(staging_dir: Path, target_dir: Path, arch="x32"):
     colors.info(f"libmnl: target_build")
     repo_root = Path(__file__).parent
     make_jobs = multiprocessing.cpu_count()
-    subprocess.run(["make", f"-j{make_jobs}"], cwd=repo_root, env=get_env(), check=True)
+    subprocess.run(["make", f"-j{make_jobs}"], cwd=repo_root, env=get_build_env(), check=True)
 
 def target_install(staging_dir: Path, target_dir: Path, arch="x32"):
     colors.info(f"libmnl: target_install")
@@ -56,11 +49,11 @@ def target_install(staging_dir: Path, target_dir: Path, arch="x32"):
     
     # Install to staging for use by libnftnl and nftables
     colors.info(f"libmnl: installing to staging {staging_dir}")
-    subprocess.run(["make", f"DESTDIR={staging_dir}", "install"], cwd=repo_root, env=get_env(), check=True)
+    subprocess.run(["make", f"DESTDIR={staging_dir}", "install"], cwd=repo_root, env=get_build_env(), check=True)
     
     # Install to target for runtime
     colors.info(f"libmnl: installing to target {target_dir}")
-    subprocess.run(["make", f"DESTDIR={target_dir}", "install"], cwd=repo_root, env=get_env(), check=True)
+    subprocess.run(["make", f"DESTDIR={target_dir}", "install"], cwd=repo_root, env=get_build_env(), check=True)
     
     # Prune development files and documentation from target
     colors.info(f"libmnl: pruning development files and documentation from target...")
